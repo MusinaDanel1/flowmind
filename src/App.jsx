@@ -933,6 +933,240 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
 }
 
 
+
+// ─── Focus Mode ───────────────────────────────────────────────────────────────
+
+function useSound() {
+  function playTick() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880;
+      o.type = "sine";
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      o.start(ctx.currentTime);
+      o.stop(ctx.currentTime + 0.08);
+    } catch {}
+  }
+
+  function playDone() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [[523, 0], [659, 0.12], [784, 0.24], [1047, 0.38]].forEach(([freq, delay]) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq;
+        o.type = "sine";
+        g.gain.setValueAtTime(0, ctx.currentTime + delay);
+        g.gain.linearRampToValueAtTime(0.18, ctx.currentTime + delay + 0.04);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.35);
+        o.start(ctx.currentTime + delay);
+        o.stop(ctx.currentTime + delay + 0.4);
+      });
+    } catch {}
+  }
+
+  function playStart() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 528;
+      o.type = "sine";
+      g.gain.setValueAtTime(0.15, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      o.start(ctx.currentTime);
+      o.stop(ctx.currentTime + 0.4);
+    } catch {}
+  }
+
+  return { playTick, playDone, playStart };
+}
+
+const FOCUS_DURATIONS = [
+  { label: "25 мин", seconds: 25 * 60 },
+  { label: "15 мин", seconds: 15 * 60 },
+  { label: "45 мин", seconds: 45 * 60 },
+  { label: "5 мин",  seconds: 5 * 60  },
+];
+
+function FocusView({ tasks, onDone, onSetFullscreen }) {
+  const activeTasks = tasks.filter(t => t.status === "active");
+  const [selectedTask, setSelectedTask] = useState(activeTasks[0] || null);
+  const [duration, setDuration] = useState(FOCUS_DURATIONS[0]);
+  const [timeLeft, setTimeLeft] = useState(FOCUS_DURATIONS[0].seconds);
+  const [running, setRunning] = useState(false);
+  const [finished, setFinished] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const intervalRef = useRef(null);
+  const { playTick, playDone, playStart } = useSound();
+
+  const pct = ((duration.seconds - timeLeft) / duration.seconds) * 100;
+  const mins = String(Math.floor(timeLeft / 60)).padStart(2, "0");
+  const secs = String(timeLeft % 60).padStart(2, "0");
+  const radius = 95;
+  const circ = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    if (running) {
+      intervalRef.current = setInterval(() => {
+        setTimeLeft(t => {
+          if (t <= 1) {
+            clearInterval(intervalRef.current);
+            setRunning(false);
+            setFinished(true);
+            playDone();
+            return 0;
+          }
+          if ((t - 1) % 60 === 0) playTick();
+          return t - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [running]);
+
+  function handleStart() {
+    if (finished) {
+      setFinished(false);
+      setTimeLeft(duration.seconds);
+      return;
+    }
+    playStart();
+    setRunning(true);
+    setFullscreen(true);
+  }
+
+  function handlePause() { setRunning(false); }
+  function handleReset() {
+    setRunning(false);
+    setFinished(false);
+    setTimeLeft(duration.seconds);
+    setFullscreen(false);
+  }
+
+  function handleChangeDuration(d) {
+    setDuration(d);
+    setTimeLeft(d.seconds);
+    setRunning(false);
+    setFinished(false);
+  }
+
+  function handleComplete() {
+    if (selectedTask) onDone(selectedTask.id);
+    handleReset();
+    setSelectedTask(activeTasks.find(t => t.id !== selectedTask?.id) || null);
+  }
+
+  const catColor = CATEGORY_COLORS[selectedTask?.category] || "#f59e0b";
+
+  // ── Fullscreen overlay — rendered via prop callback ──
+  useEffect(() => {
+    if (fullscreen) {
+      onSetFullscreen({
+        mins, secs, pct, running, finished, selectedTask, catColor,
+        radius, circ,
+        onPause: handlePause,
+        onStart: handleStart,
+        onReset: handleReset,
+        onExit: () => setFullscreen(false),
+        onComplete: handleComplete,
+      });
+    } else {
+      onSetFullscreen(null);
+    }
+  }, [fullscreen, mins, secs, running, finished]);
+
+  // ── Setup screen ──
+  return (
+    <div className="space-y-6 max-w-xl">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Режим фокуса</h1>
+        <p className="text-slate-400 text-sm mt-0.5">Одна задача. Один таймер. Полная концентрация.</p>
+      </div>
+
+      {/* Task picker */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mb-3">Выбери задачу</p>
+        {activeTasks.length === 0 ? (
+          <p className="text-slate-400 text-sm">Нет активных задач — добавь их в разделе Сегодня</p>
+        ) : (
+          <div className="space-y-2">
+            {activeTasks.slice(0, 6).map(t => {
+              const color = CATEGORY_COLORS[t.category];
+              const selected = selectedTask?.id === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTask(t)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                    selected
+                      ? "border-amber-400 bg-amber-50"
+                      : "border-slate-100 hover:border-slate-200 bg-slate-50"
+                  }`}
+                >
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                  <span className={`text-sm font-medium ${selected ? "text-slate-900" : "text-slate-600"}`}>
+                    {t.title}
+                  </span>
+                  {selected && <span className="ml-auto text-amber-500 text-xs">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Duration picker */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mb-3">Длительность</p>
+        <div className="grid grid-cols-4 gap-2">
+          {FOCUS_DURATIONS.map(d => (
+            <button
+              key={d.label}
+              onClick={() => handleChangeDuration(d)}
+              className={`py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
+                duration.label === d.label
+                  ? "border-amber-400 bg-amber-50 text-amber-700"
+                  : "border-slate-200 text-slate-500 hover:border-amber-300"
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mini timer preview + start */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex items-center justify-between">
+        <div>
+          <p className="text-4xl font-bold text-slate-900 tabular-nums">{mins}:{secs}</p>
+          <p className="text-slate-400 text-sm mt-1">
+            {selectedTask ? `"${selectedTask.title.slice(0, 28)}${selectedTask.title.length > 28 ? "…" : ""}"` : "задача не выбрана"}
+          </p>
+        </div>
+        <button
+          onClick={handleStart}
+          disabled={!selectedTask}
+          className="px-8 py-4 rounded-2xl font-bold text-base transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
+          style={{
+            background: "#f59e0b",
+            color: "#1c1917",
+            boxShadow: selectedTask ? "0 8px 24px rgba(245,158,11,0.35)" : "none",
+          }}
+        >
+          Войти в фокус →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Voice Assistant ──────────────────────────────────────────────────────────
 
 function useVoiceSynth() {
@@ -1232,6 +1466,7 @@ export default function FlowMind() {
   const [toast, setToast] = useState(null);
   const [completing, setCompleting] = useState(new Set());
   const [editingTask, setEditingTask] = useState(null);
+  const [focusOverlay, setFocusOverlay] = useState(null);
   const [lastPrioritized, setLastPrioritized] = useState(() => {
     const c = storage.getPriorityCache();
     return c?.at || null;
@@ -1343,7 +1578,8 @@ export default function FlowMind() {
     { id: "today", label: "Сегодня", icon: "◈" },
     { id: "all", label: "Задачи", icon: "≡" },
     { id: "analytics", label: "Аналитика", icon: "◎" },
-    { id: "voice", label: "Голос", icon: "◉" },
+    { id: "voice", label: "Ассистент", icon: "◉" },
+    { id: "focus", label: "Фокус", icon: "◐" },
   ];
 
   return (
@@ -1450,6 +1686,7 @@ export default function FlowMind() {
           )}
           {view === "analytics" && <AnalyticsView tasks={tasks} />}
           {view === "voice" && <VoiceView tasks={tasks} onAddTask={handleAdd} />}
+          {view === "focus" && <FocusView tasks={tasks} onDone={handleDone} onSetFullscreen={setFocusOverlay} />}
         </div>
       </main>
 
@@ -1462,6 +1699,103 @@ export default function FlowMind() {
           onClose={() => setShowModal(false)}
           onAdd={(task) => { handleAdd(task); setShowModal(false); }}
         />
+      )}
+
+      {/* Focus Fullscreen Overlay — rendered at root to cover sidebar */}
+      {focusOverlay && (
+        <div
+          className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
+          style={{ zIndex: 9999, background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fff7ed 100%)" }}
+        >
+          {/* Dot pattern */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none"
+            style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(180,130,0,0.2) 1px, transparent 0)", backgroundSize: "28px 28px" }} />
+
+          {/* Task name */}
+          <div className="mb-8 text-center px-8 relative z-10">
+            <p className="text-xs font-mono text-amber-500/80 uppercase tracking-widest mb-3">Сейчас в фокусе</p>
+            <h2 className="text-3xl font-bold text-slate-800 max-w-lg leading-tight">
+              {focusOverlay.selectedTask?.title || "Свободный фокус"}
+            </h2>
+            {focusOverlay.selectedTask && (
+              <div className="flex items-center justify-center gap-2 mt-3">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: focusOverlay.catColor }} />
+                <span className="text-sm text-slate-500">{focusOverlay.selectedTask.category}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Ring timer */}
+          <div className="relative flex items-center justify-center w-72 h-72 relative z-10">
+            <svg width="288" height="288" className="-rotate-90">
+              <circle cx="144" cy="144" r="128" fill="none" stroke="#fde68a" strokeWidth="10" />
+              <circle
+                cx="144" cy="144" r="128"
+                fill="none"
+                stroke={focusOverlay.finished ? "#10b981" : "#f59e0b"}
+                strokeWidth="10"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 128}
+                strokeDashoffset={2 * Math.PI * 128 - (focusOverlay.pct / 100) * 2 * Math.PI * 128}
+                style={{ transition: "stroke-dashoffset 0.9s linear, stroke 0.5s" }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <span
+                className="text-7xl font-bold tabular-nums"
+                style={{ color: focusOverlay.finished ? "#10b981" : "#1e293b" }}
+              >
+                {focusOverlay.mins}:{focusOverlay.secs}
+              </span>
+              <span className="text-slate-400 text-base font-mono tracking-widest uppercase text-sm">
+                {focusOverlay.finished ? "готово!" : focusOverlay.running ? "фокус" : "пауза"}
+              </span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-5 mt-10 relative z-10">
+            {!focusOverlay.finished ? (
+              <>
+                <button
+                  onClick={focusOverlay.onReset}
+                  className="w-14 h-14 rounded-full border-2 border-slate-300 text-slate-400 hover:border-amber-400 hover:text-amber-500 transition-all flex items-center justify-center text-xl"
+                >↺</button>
+                <button
+                  onClick={focusOverlay.running ? focusOverlay.onPause : focusOverlay.onStart}
+                  className="w-24 h-24 rounded-full text-3xl font-bold transition-all flex items-center justify-center shadow-2xl"
+                  style={{ background: "#f59e0b", color: "#1c1917", boxShadow: "0 12px 40px rgba(245,158,11,0.4)" }}
+                >
+                  {focusOverlay.running ? "⏸" : "▶"}
+                </button>
+                <button
+                  onClick={focusOverlay.onExit}
+                  className="w-14 h-14 rounded-full border-2 border-slate-300 text-slate-400 hover:border-amber-400 hover:text-amber-500 transition-all flex items-center justify-center text-xl"
+                >↙</button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <p className="text-slate-600 text-lg text-center">Время вышло! Задача выполнена?</p>
+                <div className="flex gap-3">
+                  <button onClick={focusOverlay.onComplete}
+                    className="px-8 py-3 rounded-xl bg-emerald-500 text-white font-semibold hover:bg-emerald-400 transition-colors shadow-lg text-base">
+                    ✓ Да, выполнено
+                  </button>
+                  <button onClick={focusOverlay.onReset}
+                    className="px-8 py-3 rounded-xl border-2 border-slate-300 text-slate-600 font-semibold hover:bg-white transition-colors text-base">
+                    Продолжить
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {focusOverlay.running && (
+            <p className="absolute bottom-10 text-slate-400/50 text-sm font-mono italic">
+              не отвлекайся — ты в потоке ✦
+            </p>
+          )}
+        </div>
       )}
 
       {/* Edit Modal */}
