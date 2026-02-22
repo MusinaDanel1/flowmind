@@ -675,13 +675,38 @@ function DonutChart({ segments }) {
 
 // ─── Views ────────────────────────────────────────────────────────────────────
 
+function useLiveClock() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  return time;
+}
+
 function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastPrioritized, onReprioritize, completing }) {
   const [newIds, setNewIds] = useState(new Set());
+  const time = useLiveClock();
 
   const active = tasks.filter((t) => t.status === "active");
-  const now = active.slice(0, 2);
-  const today = active.slice(2, 5);
-  const later = active.slice(5);
+  const done = tasks.filter((t) => t.status === "done");
+  const overdue = active.filter((t) => t.deadline && new Date(t.deadline) < new Date());
+  const todayStr = new Date().toISOString().split("T")[0];
+  const dueToday = active.filter((t) => t.deadline && t.deadline.startsWith(todayStr));
+  const total = tasks.length;
+  const progressPct = total > 0 ? Math.round((done.length / total) * 100) : 0;
+
+  const heroTask = active[0] || null;
+  const restNow = active.slice(1, 3);
+  const restLater = active.slice(3);
+
+  const hour = time.getHours();
+  const greeting = hour < 12 ? "Доброе утро" : hour < 17 ? "Добрый день" : "Добрый вечер";
+  const greetingEmoji = hour < 12 ? "🌤" : hour < 17 ? "☀️" : "🌙";
+
+  const timeStr = time.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  const secondStr = time.toLocaleTimeString("ru-RU", { second: "2-digit" }).slice(-2);
+  const dateStr = time.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
 
   function handleAdd(task) {
     setNewIds((s) => new Set([...s, task.id]));
@@ -690,45 +715,145 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
   }
 
   const Section = ({ title, emoji, items, dim }) => (
-    <div className={dim ? "opacity-60" : ""}>
+    <div className={dim ? "opacity-50" : ""}>
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-base">{emoji}</span>
+        <span className="text-sm">{emoji}</span>
         <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">{title}</span>
         <div className="flex-1 h-px bg-slate-100" />
         <span className="text-xs text-slate-400">{items.length}</span>
       </div>
       {items.length === 0 ? (
-        <p className="text-slate-300 text-sm text-center py-4">Пусто</p>
+        <p className="text-slate-300 text-sm text-center py-3">Пусто</p>
       ) : (
         items.map((t) => (
-          <TaskCard
-            key={t.id}
-            task={t}
-            onDone={onDone}
-            onDelete={onDelete}
-            onEdit={onEdit}
-            animate={newIds.has(t.id)}
-            completing={completing}
-          />
+          <TaskCard key={t.id} task={t} onDone={onDone} onDelete={onDelete} onEdit={onEdit}
+            animate={newIds.has(t.id)} completing={completing} />
         ))
       )}
     </div>
   );
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Сегодня</h1>
-          <p className="text-slate-400 text-sm mt-0.5">
-            {new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
-          </p>
+    <div className="space-y-5 pb-8">
+
+      {/* ── Hero Header ── */}
+      <div
+        className="relative rounded-3xl overflow-hidden p-7"
+        style={{ background: "linear-gradient(135deg, #1e293b 0%, #0f172a 60%, #1c1404 100%)" }}
+      >
+        {/* Ambient glow */}
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%)", transform: "translate(20%, -30%)" }} />
+        <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)", transform: "translate(-20%, 30%)" }} />
+
+        <div className="relative z-10 flex items-start justify-between">
+          {/* Left: greeting + date */}
+          <div>
+            <p className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
+              <span>{greetingEmoji}</span> {greeting}
+            </p>
+            <p className="text-slate-500 text-xs mt-1 capitalize">{dateStr}</p>
+          </div>
+
+          {/* Right: live clock */}
+          <div className="text-right">
+            <div className="flex items-baseline gap-1">
+              <span className="text-5xl font-bold text-white tabular-nums tracking-tight"
+                style={{ fontVariantNumeric: "tabular-nums" }}>{timeStr}</span>
+              <span className="text-xl font-mono text-amber-400/60 tabular-nums w-6">{secondStr}</span>
+            </div>
+          </div>
         </div>
 
+        {/* Progress bar */}
+        <div className="relative z-10 mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-slate-500 font-mono">прогресс дня</span>
+            <span className="text-xs font-bold text-amber-400 font-mono">{progressPct}%</span>
+          </div>
+          <div className="h-1.5 bg-slate-700/60 rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-1000"
+              style={{
+                width: `${progressPct}%`,
+                background: "linear-gradient(90deg, #f59e0b, #fbbf24)",
+                boxShadow: progressPct > 0 ? "0 0 8px rgba(245,158,11,0.5)" : "none",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Stats row */}
+        <div className="relative z-10 flex gap-4 mt-5">
+          {[
+            { label: "активных", value: active.length, color: "#94a3b8" },
+            { label: "выполнено", value: done.length, color: "#34d399" },
+            { label: "сегодня", value: dueToday.length, color: "#fbbf24" },
+            { label: "просрочено", value: overdue.length, color: overdue.length > 0 ? "#f87171" : "#94a3b8" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="flex-1 text-center">
+              <p className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</p>
+              <p className="text-xs text-slate-600 mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* AI Priority Status Banner */}
-      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-100/80 border border-slate-200">
+      {/* ── Hero Task ── */}
+      {heroTask && (
+        <div>
+          <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mb-3 px-1">
+            ⚡ главная задача сейчас
+          </p>
+          <div
+            onClick={() => onEdit(heroTask)}
+            className="relative rounded-2xl p-5 border-2 border-amber-200 bg-amber-50/60 cursor-pointer hover:border-amber-300 hover:bg-amber-50 transition-all group overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none"
+              style={{ background: "radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%)", transform: "translate(20%, -20%)" }} />
+
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-lg font-bold text-slate-900 leading-snug">{heroTask.title}</p>
+                {heroTask.priorityReason && (
+                  <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                    <span>✦</span> {heroTask.priorityReason}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {heroTask.deadline && (
+                    <span className={`text-xs px-2.5 py-1 rounded-full font-mono ${
+                      new Date(heroTask.deadline) < new Date()
+                        ? "bg-red-100 text-red-500"
+                        : heroTask.deadline.startsWith(todayStr)
+                        ? "bg-amber-100 text-amber-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}>
+                      {formatDeadline(heroTask.deadline)?.label}
+                    </span>
+                  )}
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-500 capitalize">
+                    {heroTask.category}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDone(heroTask.id); }}
+                className="w-10 h-10 rounded-full border-2 border-amber-300 hover:border-amber-500 hover:bg-amber-400/20 flex-shrink-0 transition-all flex items-center justify-center text-amber-400 hover:text-amber-600 text-lg"
+              >
+                ○
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reminders ── */}
+      <RemindersPanel tasks={tasks} />
+
+      {/* ── AI priority status ── */}
+      <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-white border border-slate-200">
         {prioritizing ? (
           <Loader text="ИИ расставляет приоритеты" />
         ) : (
@@ -736,34 +861,239 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
             <span className="text-amber-400 text-xs">✦</span>
             <span className="text-xs text-slate-400">
               {lastPrioritized
-                ? `Приоритизировано в ${new Date(lastPrioritized).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`
-                : "Ещё не приоритизировано"}
+                ? `Обновлено в ${new Date(lastPrioritized).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`
+                : "Приоритеты не расставлены"}
             </span>
           </div>
         )}
-        <button
-          onClick={onReprioritize}
-          disabled={prioritizing}
-          className="text-xs text-slate-400 hover:text-amber-400 transition-colors disabled:opacity-30 font-mono"
-        >
+        <button onClick={onReprioritize} disabled={prioritizing}
+          className="text-xs text-slate-400 hover:text-amber-500 transition-colors disabled:opacity-30 font-mono">
           ↺ обновить
         </button>
       </div>
 
-      {active.length === 0 ? (
-        <div className="text-center py-16 space-y-3">
-          <p className="text-5xl">✦</p>
-          <p className="text-slate-700 font-medium">Все задачи выполнены!</p>
-          <p className="text-slate-400 text-sm">Добавь новые или отдохни — ты заслужил</p>
-        </div>
-      ) : (
-        <>
-          <RemindersPanel tasks={tasks} />
+      {/* ── Tabbed task list + Calendar ── */}
+      <TabbedTasks
+        tasks={tasks}
+        active={active}
+        heroTask={heroTask}
+        onDone={onDone}
+        onDelete={onDelete}
+        onEdit={onEdit}
+        completing={completing}
+        newIds={newIds}
+      />
+    </div>
+  );
+}
 
-      <Section title="Сейчас" emoji="⚡" items={now} />
-      <Section title="На сегодня" emoji="○" items={today} />
-          <Section title="Потом" emoji="◦" items={later} dim />
-        </>
+function TabbedTasks({ tasks, active, heroTask, onDone, onDelete, onEdit, completing, newIds }) {
+  const [tab, setTab] = useState("today");
+  const todayStrCal = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = useState(todayStrCal);
+
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  // Today tab: due today or high priority (excluding hero)
+  const rest = active.filter(t => t.id !== heroTask?.id);
+  const todayTasks = rest.filter(t =>
+    (t.deadline && t.deadline.startsWith(todayStr)) ||
+    (t.deadline && new Date(t.deadline) < new Date()) ||
+    t.priority === "high"
+  );
+  const laterTasks = rest.filter(t => !todayTasks.find(x => x.id === t.id));
+
+  // Calendar: build 5-week grid
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startPad = startOfMonth.getDay(); // 0=sun
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  const tasksByDate = {};
+  tasks.forEach(t => {
+    if (t.deadline) {
+      const d = t.deadline.split("T")[0];
+      if (!tasksByDate[d]) tasksByDate[d] = [];
+      tasksByDate[d].push(t);
+    }
+  });
+
+  const tabs = [
+    { id: "today", label: "Сегодня", count: todayTasks.length },
+    { id: "later", label: "Завтра+", count: laterTasks.length },
+    { id: "calendar", label: "Календарь", count: null },
+  ];
+
+  return (
+    <div>
+      {/* Tab bar */}
+      <div className="flex gap-1 bg-white rounded-2xl p-1.5 border border-slate-200 shadow-sm mb-4">
+        {tabs.map(({ id, label, count }) => (
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-all ${
+              tab === id
+                ? "bg-slate-900 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            {label}
+            {count !== null && count > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-mono ${
+                tab === id ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+              }`}>{count}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Today tab */}
+      {tab === "today" && (
+        <div className="space-y-2">
+          {todayTasks.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <p className="text-3xl mb-2">○</p>
+              <p className="text-sm">Нет срочных задач на сегодня</p>
+            </div>
+          ) : (
+            todayTasks.map(t => (
+              <TaskCard key={t.id} task={t} onDone={onDone} onDelete={onDelete} onEdit={onEdit}
+                animate={newIds.has(t.id)} completing={completing} />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Later tab */}
+      {tab === "later" && (
+        <div className="space-y-2 opacity-80">
+          {laterTasks.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <p className="text-3xl mb-2">◦</p>
+              <p className="text-sm">Нет задач на потом</p>
+            </div>
+          ) : (
+            laterTasks.map(t => (
+              <TaskCard key={t.id} task={t} onDone={onDone} onDelete={onDelete} onEdit={onEdit}
+                animate={newIds.has(t.id)} completing={completing} />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Calendar tab */}
+      {tab === "calendar" && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          {/* Month header */}
+          <p className="text-sm font-semibold text-slate-700 mb-4 capitalize">
+            {now.toLocaleDateString("ru-RU", { month: "long", year: "numeric" })}
+          </p>
+
+          {/* Weekday labels */}
+          <div className="grid grid-cols-7 mb-2">
+            {["Вс","Пн","Вт","Ср","Чт","Пт","Сб"].map(d => (
+              <div key={d} className="text-center text-xs text-slate-400 font-mono py-1">{d}</div>
+            ))}
+          </div>
+
+          {/* Days grid */}
+          <div className="grid grid-cols-7 gap-1">
+            {/* padding before month start */}
+            {Array.from({ length: startPad }).map((_, i) => <div key={`pad-${i}`} />)}
+
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1;
+              const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+              const dayTasks = tasksByDate[dateKey] || [];
+              const isToday = day === now.getDate();
+              const hasOverdue = dayTasks.some(t => t.status === "active" && new Date(t.deadline) < new Date() && !dateKey.startsWith(todayStr));
+              const hasHigh = dayTasks.some(t => t.priority === "high" && t.status === "active");
+
+              return (
+                <div
+                  key={day}
+                  onClick={() => { setSelectedDate(dateKey); setTab("calendar"); }}
+                  className={`relative flex flex-col items-center py-1.5 rounded-xl transition-all cursor-pointer ${
+                    selectedDate === dateKey && !isToday
+                      ? "bg-amber-400 text-white"
+                      : isToday
+                      ? "bg-slate-900 text-white"
+                      : dayTasks.length > 0
+                      ? "bg-amber-50 hover:bg-amber-100"
+                      : "hover:bg-slate-50"
+                  }`}
+                >
+                  <span className={`text-sm font-medium tabular-nums ${
+                    isToday ? "text-white" : "text-slate-700"
+                  }`}>{day}</span>
+
+                  {/* Task dots */}
+                  {dayTasks.length > 0 && (
+                    <div className="flex gap-0.5 mt-0.5">
+                      {dayTasks.slice(0, 3).map((t, idx) => (
+                        <div
+                          key={idx}
+                          className="w-1 h-1 rounded-full"
+                          style={{
+                            backgroundColor: isToday ? "rgba(255,255,255,0.7)" :
+                              t.status === "done" ? "#34d399" :
+                              t.priority === "high" ? "#f59e0b" :
+                              CATEGORY_COLORS[t.category] || "#94a3b8"
+                          }}
+                        />
+                      ))}
+                      {dayTasks.length > 3 && (
+                        <span className={`text-[8px] leading-none ${isToday ? "text-white/60" : "text-slate-400"}`}>+</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="flex gap-4 mt-4 pt-4 border-t border-slate-100">
+            {[
+              { color: "#f59e0b", label: "высокий приоритет" },
+              { color: "#34d399", label: "выполнено" },
+              { color: "#94a3b8", label: "обычная" },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                <span className="text-xs text-slate-400">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Tasks on selected date */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mb-3">
+              {selectedDate === todayStrCal ? "задачи сегодня" :
+                new Date(selectedDate + "T12:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}
+            </p>
+            {(tasksByDate[selectedDate] || []).length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-3">Нет задач на этот день</p>
+            ) : (
+              (tasksByDate[selectedDate] || []).map(t => (
+                <div key={t.id}
+                  onClick={() => onEdit && onEdit(t)}
+                  className="flex items-center gap-2 py-1.5 rounded-lg px-2 hover:bg-slate-50 cursor-pointer transition-colors">
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: CATEGORY_COLORS[t.category] || "#94a3b8" }} />
+                  <span className={`text-sm flex-1 ${t.status === "done" ? "line-through text-slate-400" : "text-slate-700"}`}>
+                    {t.title}
+                  </span>
+                  {t.status === "done"
+                    ? <span className="text-emerald-400 text-xs">✓</span>
+                    : <span className="text-xs text-slate-300 font-mono capitalize">{t.priority}</span>
+                  }
+                </div>
+              ))
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
