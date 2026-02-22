@@ -180,11 +180,11 @@ function Toast({ message, onDone }) {
   }, []);
   return (
     <div
-      className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-zinc-800 border border-zinc-700 shadow-xl"
+      className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-100 border border-slate-200 shadow-xl"
       style={{ animation: "toastIn 0.3s ease" }}
     >
       <span className="text-emerald-400 text-sm">✓</span>
-      <span className="text-sm text-zinc-200 whitespace-nowrap">{message}</span>
+      <span className="text-sm text-slate-800 whitespace-nowrap">{message}</span>
     </div>
   );
 }
@@ -199,8 +199,8 @@ function TaskCard({ task, onDone, onDelete, onEdit, animate, completing }) {
         animate ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
       } ${completing?.has(task.id) ? "task-completing pointer-events-none" : ""} ${
         task.priority === "high"
-          ? "bg-zinc-800/80 border-amber-500/30"
-          : "bg-zinc-800/50 border-zinc-700/50"
+          ? "bg-white border-amber-500/30"
+          : "bg-white border-slate-200"
       } hover:border-zinc-500/70`}
       style={{ transition: "border-color 0.2s" }}
     >
@@ -214,17 +214,17 @@ function TaskCard({ task, onDone, onDelete, onEdit, animate, completing }) {
         {/* Done button */}
         <button
           onClick={(e) => { e.stopPropagation(); onDone(task.id); }}
-          className="mt-0.5 w-5 h-5 rounded-full border-2 border-zinc-600 hover:border-amber-400 flex-shrink-0 transition-colors duration-200 hover:bg-amber-400/10"
+          className="mt-0.5 w-5 h-5 rounded-full border-2 border-slate-300 hover:border-amber-400 flex-shrink-0 transition-colors duration-200 hover:bg-amber-400/10"
         />
 
         <div className="flex-1 min-w-0">
-          <p className="text-zinc-100 text-sm font-medium leading-snug">{task.title}</p>
+          <p className="text-slate-900 text-sm font-medium leading-snug">{task.title}</p>
 
           <div className="flex flex-wrap gap-2 mt-2">
             {dl && (
               <span
                 className={`text-xs px-2 py-0.5 rounded-full font-mono ${
-                  dl.warn ? "bg-red-500/15 text-red-400" : "bg-zinc-700 text-zinc-400"
+                  dl.warn ? "bg-red-500/15 text-red-400" : "bg-slate-200 text-slate-500"
                 }`}
               >
                 {dl.label}
@@ -236,14 +236,14 @@ function TaskCard({ task, onDone, onDelete, onEdit, animate, completing }) {
             >
               {task.category}
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-500">
               {ENERGY_LABELS[task.energy]}
             </span>
           </div>
 
-          <p className="mt-1.5 text-xs text-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity">нажми чтобы редактировать</p>
+          <p className="mt-1.5 text-xs text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">нажми чтобы редактировать</p>
           {(task.priorityReason || task.aiHint) && (
-            <p className="mt-2 text-xs text-zinc-500 italic">
+            <p className="mt-2 text-xs text-slate-400 italic">
               ✦ {task.priorityReason || task.aiHint}
             </p>
           )}
@@ -251,7 +251,7 @@ function TaskCard({ task, onDone, onDelete, onEdit, animate, completing }) {
 
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(task.id); }}
-          className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-zinc-400 transition-all text-lg leading-none mt-0.5"
+          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-500 transition-all text-lg leading-none mt-0.5"
         >
           ×
         </button>
@@ -268,31 +268,31 @@ function EditTaskModal({ task, onClose, onSave, onDelete }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-zinc-100 font-semibold text-lg">Редактировать задачу</h2>
-            <button onClick={onClose} className="text-zinc-600 hover:text-zinc-400 text-xl leading-none">×</button>
+            <h2 className="text-slate-900 font-semibold text-lg">Редактировать задачу</h2>
+            <button onClick={onClose} className="text-slate-400 hover:text-slate-500 text-xl leading-none">×</button>
           </div>
 
           {/* Title */}
           <div>
-            <label className="text-xs text-zinc-500 mb-1 block">Название</label>
+            <label className="text-xs text-slate-400 mb-1 block">Название</label>
             <input
               value={form.title}
               onChange={(e) => set("title", e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-amber-500/50"
+              className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-amber-500/50"
             />
           </div>
 
           {/* Deadline */}
           <div>
-            <label className="text-xs text-zinc-500 mb-1 block">Дедлайн</label>
+            <label className="text-xs text-slate-400 mb-1 block">Дедлайн</label>
             <input
               type="date"
               value={form.deadline || ""}
               onChange={(e) => set("deadline", e.target.value || null)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-amber-500/50"
+              className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:border-amber-500/50"
             />
           </div>
 
@@ -304,11 +304,11 @@ function EditTaskModal({ task, onClose, onSave, onDelete }) {
               { key: "energy",   label: "Энергия",   options: ["high","medium","low"], labels: ENERGY_LABELS },
             ].map(({ key, label, options, labels }) => (
               <div key={key}>
-                <label className="text-xs text-zinc-500 mb-1 block">{label}</label>
+                <label className="text-xs text-slate-400 mb-1 block">{label}</label>
                 <select
                   value={form[key]}
                   onChange={(e) => set(key, e.target.value)}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-2 text-xs text-zinc-200 focus:outline-none"
+                  className="w-full bg-slate-100 border border-slate-200 rounded-lg px-2 py-2 text-xs text-slate-800 focus:outline-none"
                 >
                   {options.map((o) => <option key={o} value={o}>{labels[o]}</option>)}
                 </select>
@@ -318,13 +318,13 @@ function EditTaskModal({ task, onClose, onSave, onDelete }) {
 
           {/* Note */}
           <div>
-            <label className="text-xs text-zinc-500 mb-1 block">Заметка</label>
+            <label className="text-xs text-slate-400 mb-1 block">Заметка</label>
             <textarea
               value={form.note || ""}
               onChange={(e) => set("note", e.target.value)}
               placeholder="Добавь детали..."
               rows={2}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-amber-500/50"
+              className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder-zinc-600 resize-none focus:outline-none focus:border-amber-500/50"
             />
           </div>
         </div>
@@ -337,7 +337,7 @@ function EditTaskModal({ task, onClose, onSave, onDelete }) {
             Удалить
           </button>
           <div className="flex-1" />
-          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-zinc-700 text-zinc-400 text-sm hover:bg-zinc-800 transition-colors">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-slate-200 text-slate-500 text-sm hover:bg-slate-100 transition-colors">
             Отмена
           </button>
           <button
@@ -381,10 +381,10 @@ function AddTaskModal({ onClose, onAdd }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl">
         <div className="p-6">
-          <h2 className="text-zinc-100 font-semibold text-lg mb-1">Новая задача</h2>
-          <p className="text-zinc-500 text-sm mb-4">Опишите задачу как угодно — ИИ разберётся</p>
+          <h2 className="text-slate-900 font-semibold text-lg mb-1">Новая задача</h2>
+          <p className="text-slate-400 text-sm mb-4">Опишите задачу как угодно — ИИ разберётся</p>
 
           <textarea
             ref={inputRef}
@@ -392,22 +392,22 @@ function AddTaskModal({ onClose, onAdd }) {
             onChange={(e) => { setRaw(e.target.value); setParsed(null); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleParse(); } }}
             placeholder='Например: "Сдать отчёт Серику до пятницы, срочно"'
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-sm text-zinc-200 placeholder-zinc-600 resize-none focus:outline-none focus:border-amber-500/50 transition-colors"
+            className="w-full bg-slate-100 border border-slate-200 rounded-xl p-3 text-sm text-slate-800 placeholder-zinc-600 resize-none focus:outline-none focus:border-amber-500/50 transition-colors"
             rows={3}
           />
 
           {loading && <div className="mt-3"><Loader /></div>}
 
           {parsed && !loading && (
-            <div className="mt-4 bg-zinc-800/60 border border-zinc-700 rounded-xl p-4 space-y-3">
+            <div className="mt-4 bg-white border border-slate-200 rounded-xl p-4 space-y-3">
               <p className="text-xs text-amber-400 font-mono uppercase tracking-wider">ИИ распознал</p>
 
               <div>
-                <label className="text-xs text-zinc-500">Название</label>
+                <label className="text-xs text-slate-400">Название</label>
                 <input
                   value={parsed.title}
                   onChange={(e) => setParsed({ ...parsed, title: e.target.value })}
-                  className="mt-1 w-full bg-zinc-700/50 border border-zinc-600 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-amber-500/50"
+                  className="mt-1 w-full bg-slate-200/50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500/50"
                 />
               </div>
 
@@ -418,11 +418,11 @@ function AddTaskModal({ onClose, onAdd }) {
                   { key: "energy", label: "Энергия", options: ["high", "medium", "low"], labels: ENERGY_LABELS },
                 ].map(({ key, label, options, labels }) => (
                   <div key={key}>
-                    <label className="text-xs text-zinc-500">{label}</label>
+                    <label className="text-xs text-slate-400">{label}</label>
                     <select
                       value={parsed[key]}
                       onChange={(e) => setParsed({ ...parsed, [key]: e.target.value })}
-                      className="mt-1 w-full bg-zinc-700/50 border border-zinc-600 rounded-lg px-2 py-1.5 text-xs text-zinc-200 focus:outline-none"
+                      className="mt-1 w-full bg-slate-200/50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs text-slate-800 focus:outline-none"
                     >
                       {options.map((o) => <option key={o} value={o}>{labels[o]}</option>)}
                     </select>
@@ -431,17 +431,17 @@ function AddTaskModal({ onClose, onAdd }) {
               </div>
 
               <div>
-                <label className="text-xs text-zinc-500">Дедлайн</label>
+                <label className="text-xs text-slate-400">Дедлайн</label>
                 <input
                   type="date"
                   value={parsed.deadline || ""}
                   onChange={(e) => setParsed({ ...parsed, deadline: e.target.value || null })}
-                  className="mt-1 w-full bg-zinc-700/50 border border-zinc-600 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-amber-500/50"
+                  className="mt-1 w-full bg-slate-200/50 border border-slate-300 rounded-lg px-3 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-amber-500/50"
                 />
               </div>
 
               {parsed.aiHint && (
-                <p className="text-xs text-zinc-500 italic">✦ {parsed.aiHint}</p>
+                <p className="text-xs text-slate-400 italic">✦ {parsed.aiHint}</p>
               )}
             </div>
           )}
@@ -450,7 +450,7 @@ function AddTaskModal({ onClose, onAdd }) {
         <div className="flex gap-2 p-6 pt-0">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm hover:bg-zinc-800 transition-colors"
+            className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-500 text-sm hover:bg-slate-100 transition-colors"
           >
             Отмена
           </button>
@@ -492,7 +492,7 @@ function MiniBarChart({ data, color = "#f59e0b" }) {
               minHeight: 2,
             }}
           />
-          <span className="text-xs text-zinc-600">{d.label}</span>
+          <span className="text-xs text-slate-400">{d.label}</span>
         </div>
       ))}
     </div>
@@ -531,7 +531,7 @@ function DonutChart({ segments }) {
         offset += pct;
         return el;
       })}
-      <circle cx={cx} cy={cy} r={r - 8} fill="#18181b" />
+      <circle cx={cx} cy={cy} r={r - 8} fill="#f8fafc" />
       <text x="50" y="54" textAnchor="middle" fill="#f4f4f5" fontSize="12" fontWeight="600">
         {total}
       </text>
@@ -559,12 +559,12 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
     <div className={dim ? "opacity-60" : ""}>
       <div className="flex items-center gap-2 mb-3">
         <span className="text-base">{emoji}</span>
-        <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">{title}</span>
-        <div className="flex-1 h-px bg-zinc-800" />
-        <span className="text-xs text-zinc-600">{items.length}</span>
+        <span className="text-xs font-mono text-slate-400 uppercase tracking-widest">{title}</span>
+        <div className="flex-1 h-px bg-slate-100" />
+        <span className="text-xs text-slate-400">{items.length}</span>
       </div>
       {items.length === 0 ? (
-        <p className="text-zinc-700 text-sm text-center py-4">Пусто</p>
+        <p className="text-slate-300 text-sm text-center py-4">Пусто</p>
       ) : (
         items.map((t) => (
           <TaskCard
@@ -585,8 +585,8 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Сегодня</h1>
-          <p className="text-zinc-500 text-sm mt-0.5">
+          <h1 className="text-2xl font-bold text-slate-900">Сегодня</h1>
+          <p className="text-slate-400 text-sm mt-0.5">
             {new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
           </p>
         </div>
@@ -594,13 +594,13 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
       </div>
 
       {/* AI Priority Status Banner */}
-      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-zinc-800/40 border border-zinc-700/40">
+      <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-100/80 border border-slate-200">
         {prioritizing ? (
           <Loader text="ИИ расставляет приоритеты" />
         ) : (
           <div className="flex items-center gap-2">
             <span className="text-amber-400 text-xs">✦</span>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-slate-400">
               {lastPrioritized
                 ? `Приоритизировано в ${new Date(lastPrioritized).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`
                 : "Ещё не приоритизировано"}
@@ -610,7 +610,7 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
         <button
           onClick={onReprioritize}
           disabled={prioritizing}
-          className="text-xs text-zinc-600 hover:text-amber-400 transition-colors disabled:opacity-30 font-mono"
+          className="text-xs text-slate-400 hover:text-amber-400 transition-colors disabled:opacity-30 font-mono"
         >
           ↺ обновить
         </button>
@@ -619,8 +619,8 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
       {active.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <p className="text-5xl">✦</p>
-          <p className="text-zinc-300 font-medium">Все задачи выполнены!</p>
-          <p className="text-zinc-600 text-sm">Добавь новые или отдохни — ты заслужил</p>
+          <p className="text-slate-700 font-medium">Все задачи выполнены!</p>
+          <p className="text-slate-400 text-sm">Добавь новые или отдохни — ты заслужил</p>
         </div>
       ) : (
         <>
@@ -640,19 +640,19 @@ function AllTasksView({ tasks, onDone, onDelete, onEdit, onAdd, completing }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-zinc-100">Все задачи</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Все задачи</h1>
 
       </div>
 
-      <div className="flex gap-1 bg-zinc-800/60 rounded-xl p-1">
+      <div className="flex gap-1 bg-white rounded-xl p-1">
         {[["active", "Активные"], ["done", "Готово"], ["all", "Все"]].map(([v, l]) => (
           <button
             key={v}
             onClick={() => setFilter(v)}
             className={`flex-1 py-1.5 rounded-lg text-sm transition-all ${
               filter === v
-                ? "bg-zinc-700 text-zinc-100 font-medium"
-                : "text-zinc-500 hover:text-zinc-400"
+                ? "bg-slate-200 text-slate-900 font-medium"
+                : "text-slate-400 hover:text-slate-500"
             }`}
           >
             {l}
@@ -662,8 +662,8 @@ function AllTasksView({ tasks, onDone, onDelete, onEdit, onAdd, completing }) {
 
       {filtered.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-zinc-600 text-4xl mb-3">✦</p>
-          <p className="text-zinc-500 text-sm">Здесь пока пусто</p>
+          <p className="text-slate-400 text-4xl mb-3">✦</p>
+          <p className="text-slate-400 text-sm">Здесь пока пусто</p>
         </div>
       ) : (
         filtered.map((t) => (
@@ -754,36 +754,36 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
 
   return (
     <div className="space-y-5 pb-4">
-      <h1 className="text-2xl font-bold text-zinc-100">Аналитика</h1>
+      <h1 className="text-2xl font-bold text-slate-900">Аналитика</h1>
 
       {/* Flow Score — hero metric */}
-      <div className="relative bg-zinc-800/60 rounded-2xl p-5 border border-zinc-700/50 overflow-hidden">
+      <div className="relative bg-white rounded-2xl p-5 border border-slate-200 overflow-hidden">
         <div
           className="absolute inset-0 opacity-5"
           style={{ background: `radial-gradient(circle at 80% 50%, ${flowScore >= 50 ? "#10b981" : "#f59e0b"}, transparent 60%)` }}
         />
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-1">Flow Score</p>
-            <p className="text-5xl font-bold text-zinc-100">{flowScore}<span className="text-2xl text-zinc-500">%</span></p>
+            <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mb-1">Flow Score</p>
+            <p className="text-5xl font-bold text-slate-900">{flowScore}<span className="text-2xl text-slate-400">%</span></p>
             <p className="text-sm mt-1" style={{ color: flowScore >= 50 ? "#10b981" : "#f59e0b" }}>{flowLabel}</p>
           </div>
           <div className="text-right space-y-2">
             {[
               { label: "Выполнено", value: done.length, color: "text-emerald-400" },
-              { label: "Активных", value: active.length, color: "text-zinc-300" },
-              { label: "Просрочено", value: overdue.length, color: overdue.length > 0 ? "text-red-400" : "text-zinc-600" },
+              { label: "Активных", value: active.length, color: "text-slate-700" },
+              { label: "Просрочено", value: overdue.length, color: overdue.length > 0 ? "text-red-400" : "text-slate-400" },
             ].map(({ label, value, color }) => (
               <div key={label}>
                 <span className={`text-lg font-bold ${color}`}>{value}</span>
-                <span className="text-xs text-zinc-600 ml-1.5">{label}</span>
+                <span className="text-xs text-slate-400 ml-1.5">{label}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Progress bar */}
-        <div className="mt-4 h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+        <div className="mt-4 h-1.5 bg-slate-200 rounded-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-1000"
             style={{
@@ -795,17 +795,17 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
       </div>
 
       {/* Week activity chart */}
-      <div className="bg-zinc-800/60 rounded-xl p-5 border border-zinc-700/50">
+      <div className="bg-white rounded-xl p-5 border border-slate-200">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Активность за неделю</p>
+          <p className="text-xs font-mono text-slate-400 uppercase tracking-widest">Активность за неделю</p>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-xs text-zinc-600">создано</span>
+              <span className="text-xs text-slate-400">создано</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-xs text-zinc-600">выполнено</span>
+              <span className="text-xs text-slate-400">выполнено</span>
             </div>
           </div>
         </div>
@@ -835,7 +835,7 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
                     }}
                   />
                 </div>
-                <span className={`text-xs ${isToday ? "text-amber-400" : "text-zinc-600"}`}>{d.label}</span>
+                <span className={`text-xs ${isToday ? "text-amber-400" : "text-slate-400"}`}>{d.label}</span>
               </div>
             );
           })}
@@ -843,22 +843,22 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
       </div>
 
       {/* Category breakdown */}
-      <div className="bg-zinc-800/60 rounded-xl p-5 border border-zinc-700/50">
-        <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-4">По категориям</p>
+      <div className="bg-white rounded-xl p-5 border border-slate-200">
+        <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mb-4">По категориям</p>
         <div className="space-y-3">
           {byCat.map(({ label, value, done: d, color, pct }) => (
             <div key={label}>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                  <span className="text-sm text-zinc-300">{label}</span>
+                  <span className="text-sm text-slate-700">{label}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-zinc-500">{d}/{value}</span>
+                  <span className="text-xs text-slate-400">{d}/{value}</span>
                   <span className="text-xs font-mono" style={{ color }}>{pct}%</span>
                 </div>
               </div>
-              <div className="h-1.5 bg-zinc-700 rounded-full overflow-hidden">
+              <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${pct}%`, backgroundColor: color }}
@@ -870,8 +870,8 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
       </div>
 
       {/* Priority breakdown */}
-      <div className="bg-zinc-800/60 rounded-xl p-5 border border-zinc-700/50">
-        <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-4">По приоритету</p>
+      <div className="bg-white rounded-xl p-5 border border-slate-200">
+        <p className="text-xs font-mono text-slate-400 uppercase tracking-widest mb-4">По приоритету</p>
         <div className="flex gap-3">
           {byPriority.map(({ label, total, done: d, color }) => (
             <div key={label} className="flex-1 text-center">
@@ -881,8 +881,8 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
               >
                 {d}/{total}
               </div>
-              <div className="text-xs text-zinc-500 mt-1">{label}</div>
-              <div className="mt-2 h-1 bg-zinc-700 rounded-full overflow-hidden">
+              <div className="text-xs text-slate-400 mt-1">{label}</div>
+              <div className="mt-2 h-1 bg-slate-200 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -897,13 +897,13 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
       </div>
 
       {/* AI Insight */}
-      <div className="bg-zinc-800/60 rounded-xl p-5 border border-amber-500/20">
+      <div className="bg-white rounded-xl p-5 border border-amber-500/20">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-mono text-amber-400 uppercase tracking-widest">ИИ-анализ</p>
           <button
             onClick={loadInsight}
             disabled={loadingInsight}
-            className="text-xs text-zinc-500 hover:text-amber-400 transition-colors disabled:opacity-40"
+            className="text-xs text-slate-400 hover:text-amber-400 transition-colors disabled:opacity-40"
           >
             {loadingInsight ? "..." : insight ? "↺ обновить" : "получить анализ →"}
           </button>
@@ -913,20 +913,311 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
         ) : insightLines.length > 0 ? (
           <div className="space-y-2.5">
             {insightLines.map((line, i) => (
-              <p key={i} className="text-sm text-zinc-300 leading-relaxed">{line}</p>
+              <p key={i} className="text-sm text-slate-700 leading-relaxed">{line}</p>
             ))}
-            <p className="text-xs text-zinc-600 mt-3">
+            <p className="text-xs text-slate-400 mt-3">
               Обновлено {new Date(insight.at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
         ) : (
           <button
             onClick={loadInsight}
-            className="w-full text-center py-4 text-sm text-zinc-600 hover:text-amber-400 transition-colors border border-dashed border-zinc-700 rounded-lg"
+            className="w-full text-center py-4 text-sm text-slate-400 hover:text-amber-400 transition-colors border border-dashed border-slate-200 rounded-lg"
           >
             ✦ Нажми чтобы получить персональный анализ
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Voice Assistant ──────────────────────────────────────────────────────────
+
+function useVoiceSynth() {
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "ru-RU";
+    utter.rate = 1.05;
+    utter.pitch = 1.0;
+    // Try to find a good Russian voice
+    const voices = window.speechSynthesis.getVoices();
+    const ruVoice = voices.find(v => v.lang.startsWith("ru")) || voices.find(v => v.lang.startsWith("en"));
+    if (ruVoice) utter.voice = ruVoice;
+    window.speechSynthesis.speak(utter);
+    return utter;
+  }
+  function stop() { window.speechSynthesis?.cancel(); }
+  return { speak, stop };
+}
+
+function OrbVisualizer({ state }) {
+  // state: idle | listening | thinking | speaking
+  const rings = [1, 2, 3];
+  const isActive = state !== "idle";
+
+  const orbColor = {
+    idle:      { bg: "from-amber-100 to-amber-200", shadow: "shadow-amber-200" },
+    listening: { bg: "from-amber-300 to-amber-400", shadow: "shadow-amber-300" },
+    thinking:  { bg: "from-slate-300 to-slate-400", shadow: "shadow-slate-300" },
+    speaking:  { bg: "from-emerald-200 to-emerald-400", shadow: "shadow-emerald-300" },
+  }[state];
+
+  return (
+    <div className="relative flex items-center justify-center w-48 h-48">
+      {/* Animated rings */}
+      {isActive && rings.map((r) => (
+        <div
+          key={r}
+          className="absolute rounded-full border border-amber-300/40"
+          style={{
+            width: `${r * 56 + 80}px`,
+            height: `${r * 56 + 80}px`,
+            animation: `orbRing ${1.2 + r * 0.4}s ease-in-out infinite`,
+            animationDelay: `${r * 0.15}s`,
+            borderColor: state === "speaking" ? "rgba(52,211,153,0.3)" :
+                         state === "thinking" ? "rgba(148,163,184,0.3)" :
+                         "rgba(251,191,36,0.35)",
+          }}
+        />
+      ))}
+
+      {/* Core orb */}
+      <div
+        className={`relative w-28 h-28 rounded-full bg-gradient-to-br ${orbColor.bg} shadow-2xl ${orbColor.shadow} flex items-center justify-center transition-all duration-500`}
+        style={{
+          animation: isActive ? "orbPulse 2s ease-in-out infinite" : "none",
+          boxShadow: isActive ? `0 0 60px 10px ${
+            state === "speaking" ? "rgba(52,211,153,0.25)" :
+            state === "thinking" ? "rgba(148,163,184,0.2)" :
+            "rgba(251,191,36,0.3)"
+          }` : undefined,
+        }}
+      >
+        {/* Icon inside orb */}
+        <span className="text-3xl select-none">
+          {state === "idle"      && "✦"}
+          {state === "listening" && "◎"}
+          {state === "thinking"  && "⋯"}
+          {state === "speaking"  && "♪"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function VoiceView({ tasks, onAddTask }) {
+  const [orbState, setOrbState] = useState("idle"); // idle | listening | thinking | speaking
+  const [messages, setMessages] = useState([
+    { role: "assistant", text: "Привет! Я FlowMind. Скажи мне о своей задаче, или спроси что угодно — я помогу спланировать твой день." }
+  ]);
+  const [transcript, setTranscript] = useState("");
+  const [supported, setSupported] = useState(true);
+  const recognitionRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const { speak, stop } = useVoiceSynth();
+
+  useEffect(() => {
+    if (!("webkitSpeechRecognition" in window) && !("SpeechRecognition" in window)) {
+      setSupported(false);
+    }
+    // Load voices async
+    window.speechSynthesis?.getVoices();
+    window.speechSynthesis?.addEventListener("voiceschanged", () => window.speechSynthesis.getVoices());
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function handleUserInput(text) {
+    if (!text.trim()) return;
+
+    const userMsg = { role: "user", text };
+    setMessages((m) => [...m, userMsg]);
+    setTranscript("");
+    setOrbState("thinking");
+    stop();
+
+    // Build context for Claude
+    const activeTasks = tasks.filter(t => t.status === "active").slice(0, 8);
+    const system = `Ты FlowMind — голосовой ИИ-ассистент планировщика задач. Отвечай ТОЛЬКО на русском языке. 
+Будь кратким (2-4 предложения), тёплым и конкретным. Не используй markdown, списки с дефисами или звёздочки.
+Если пользователь говорит о задаче — помоги её добавить. Если спрашивает о плане дня — дай совет исходя из задач.
+Текущие задачи пользователя: ${activeTasks.map(t => t.title).join(", ") || "нет задач"}.
+Если пользователь хочет добавить задачу, в конце ответа добавь строку: ДОБАВИТЬ_ЗАДАЧУ: <название задачи>`;
+
+    const history = messages.slice(-6).map(m => ({
+      role: m.role === "user" ? "user" : "assistant",
+      content: m.text,
+    }));
+
+    try {
+      const apiKey = import.meta.env.VITE_ANTHROPIC_KEY;
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 300,
+          system,
+          messages: [...history, { role: "user", content: text }],
+        }),
+      });
+      const data = await res.json();
+      let reply = data.content?.[0]?.text || "Извини, не смог ответить.";
+
+      // Check if AI wants to add a task
+      const taskMatch = reply.match(/ДОБАВИТЬ_ЗАДАЧУ:\s*(.+)/);
+      if (taskMatch) {
+        const taskTitle = taskMatch[1].trim();
+        reply = reply.replace(/ДОБАВИТЬ_ЗАДАЧУ:\s*.+/, "").trim();
+        // Auto-add via parseTask
+        parseTask(taskTitle).then((parsed) => {
+          onAddTask({ id: Math.random().toString(36).slice(2), ...parsed, status: "active", createdAt: new Date().toISOString() });
+        });
+        reply += " Я добавил эту задачу в твой список.";
+      }
+
+      setMessages((m) => [...m, { role: "assistant", text: reply }]);
+      setOrbState("speaking");
+      const utter = speak(reply);
+      if (utter) {
+        utter.onend = () => setOrbState("idle");
+      } else {
+        setTimeout(() => setOrbState("idle"), 2000);
+      }
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", text: "Произошла ошибка. Попробуй ещё раз." }]);
+      setOrbState("idle");
+    }
+  }
+
+  function startListening() {
+    if (!supported) return;
+    stop();
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = "ru-RU";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => setOrbState("listening");
+    recognition.onresult = (e) => {
+      const t = Array.from(e.results).map(r => r[0].transcript).join("");
+      setTranscript(t);
+      if (e.results[e.results.length - 1].isFinal) {
+        recognition.stop();
+        handleUserInput(t);
+      }
+    };
+    recognition.onerror = () => setOrbState("idle");
+    recognition.onend = () => { if (orbState === "listening") setOrbState("idle"); };
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
+  function stopListening() {
+    recognitionRef.current?.stop();
+    setOrbState("idle");
+    setTranscript("");
+  }
+
+  function handleOrbClick() {
+    if (orbState === "idle") startListening();
+    else if (orbState === "listening") stopListening();
+    else if (orbState === "speaking") { stop(); setOrbState("idle"); }
+  }
+
+  const stateLabel = {
+    idle:      "Нажми чтобы говорить",
+    listening: "Слушаю...",
+    thinking:  "Думаю...",
+    speaking:  "Говорю... (нажми чтобы остановить)",
+  }[orbState];
+
+  return (
+    <div className="flex flex-col h-screen max-h-screen">
+      <div className="px-2 pt-6 pb-2">
+        <h1 className="text-2xl font-bold text-slate-900">Голосовой ИИ</h1>
+        <p className="text-slate-400 text-sm mt-0.5">Говори — FlowMind слушает и отвечает</p>
+      </div>
+
+      {/* Chat messages */}
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-3">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div
+              className={`max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                msg.role === "user"
+                  ? "bg-amber-400 text-slate-900 rounded-tr-sm"
+                  : "bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm"
+              }`}
+            >
+              {msg.role === "assistant" && (
+                <span className="text-amber-500 text-xs font-mono block mb-1">✦ FlowMind</span>
+              )}
+              {msg.text}
+            </div>
+          </div>
+        ))}
+        {transcript && (
+          <div className="flex justify-end">
+            <div className="max-w-xs px-4 py-2.5 rounded-2xl rounded-tr-sm bg-amber-200/60 text-slate-600 text-sm italic">
+              {transcript}...
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Orb + controls */}
+      <div className="flex flex-col items-center pb-8 pt-4 border-t border-slate-100">
+        <button
+          onClick={handleOrbClick}
+          disabled={orbState === "thinking"}
+          className="focus:outline-none disabled:cursor-wait transition-transform hover:scale-105 active:scale-95"
+        >
+          <OrbVisualizer state={orbState} />
+        </button>
+
+        <p className="text-sm text-slate-400 mt-2 font-mono">{stateLabel}</p>
+
+        {!supported && (
+          <p className="text-xs text-red-400 mt-2">Браузер не поддерживает голосовой ввод. Используй Chrome.</p>
+        )}
+
+        {/* Text input fallback */}
+        <div className="mt-4 flex gap-2 w-full max-w-sm px-4">
+          <input
+            type="text"
+            placeholder="Или напиши сюда..."
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.target.value.trim()) {
+                handleUserInput(e.target.value);
+                e.target.value = "";
+              }
+            }}
+            className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-amber-400 shadow-sm"
+          />
+          <button
+            onClick={(e) => {
+              const input = e.target.closest("div").querySelector("input");
+              if (input.value.trim()) { handleUserInput(input.value); input.value = ""; }
+            }}
+            className="px-4 py-2 rounded-xl bg-amber-400 text-slate-900 text-sm font-semibold hover:bg-amber-300 transition-colors"
+          >
+            →
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1052,10 +1343,11 @@ export default function FlowMind() {
     { id: "today", label: "Сегодня", icon: "◈" },
     { id: "all", label: "Задачи", icon: "≡" },
     { id: "analytics", label: "Аналитика", icon: "◎" },
+    { id: "voice", label: "Голос", icon: "◉" },
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       {/* Global styles */}
       <style>{`
         @keyframes toastIn {
@@ -1078,15 +1370,15 @@ export default function FlowMind() {
 
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none" style={{
-        background: "radial-gradient(ellipse 50% 60% at 20% 0%, rgba(245,158,11,0.05) 0%, transparent 60%)",
+        background: "radial-gradient(ellipse 50% 60% at 20% 0%, rgba(245,158,11,0.08) 0%, transparent 60%)",
       }} />
 
       {/* ── Sidebar ── */}
-      <aside className="fixed left-0 top-0 h-full w-56 border-r border-zinc-800/60 bg-zinc-950/95 backdrop-blur-md flex flex-col z-30">
+      <aside className="fixed left-0 top-0 h-full w-56 border-r border-slate-200/80 bg-slate-50/95 backdrop-blur-md flex flex-col z-30">
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-6 py-5 border-b border-zinc-800/60">
+        <div className="flex items-center gap-2.5 px-6 py-5 border-b border-slate-200/80">
           <span className="text-amber-400 text-xl">✦</span>
-          <span className="font-bold text-zinc-100 tracking-tight text-lg">FlowMind</span>
+          <span className="font-bold text-slate-900 tracking-tight text-lg">FlowMind</span>
         </div>
 
         {/* Nav items */}
@@ -1097,8 +1389,8 @@ export default function FlowMind() {
               onClick={() => setView(id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all text-left ${
                 view === id
-                  ? "bg-amber-500/10 text-amber-400 font-medium"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/60"
+                  ? "bg-amber-50 text-amber-400 font-medium"
+                  : "text-slate-400 hover:text-slate-700 hover:bg-white"
               }`}
             >
               <span className="text-base w-5 text-center">{icon}</span>
@@ -1108,13 +1400,13 @@ export default function FlowMind() {
         </nav>
 
         {/* Bottom stats */}
-        <div className="px-5 py-5 border-t border-zinc-800/60 space-y-2">
+        <div className="px-5 py-5 border-t border-slate-200/80 space-y-2">
           <div className="flex justify-between text-xs">
-            <span className="text-zinc-600">Активных</span>
-            <span className="text-zinc-400 font-mono">{tasks.filter((t) => t.status === "active").length}</span>
+            <span className="text-slate-400">Активных</span>
+            <span className="text-slate-500 font-mono">{tasks.filter((t) => t.status === "active").length}</span>
           </div>
           <div className="flex justify-between text-xs">
-            <span className="text-zinc-600">Выполнено</span>
+            <span className="text-slate-400">Выполнено</span>
             <span className="text-emerald-500 font-mono">{tasks.filter((t) => t.status === "done").length}</span>
           </div>
         </div>
@@ -1157,6 +1449,7 @@ export default function FlowMind() {
             />
           )}
           {view === "analytics" && <AnalyticsView tasks={tasks} />}
+          {view === "voice" && <VoiceView tasks={tasks} onAddTask={handleAdd} />}
         </div>
       </main>
 

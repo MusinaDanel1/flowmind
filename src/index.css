@@ -7,9 +7,13 @@
   -webkit-font-smoothing: antialiased;
 }
 
+html, body, #root {
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
 body {
   margin: 0;
-  background: #09090b;
 }
 
 /* Custom scrollbar */
