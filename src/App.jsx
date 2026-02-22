@@ -17,6 +17,140 @@ const storage = {
   },
 };
 
+
+// ─── Smart Reminder Engine ────────────────────────────────────────────────────
+
+const reminderStorage = {
+  getScheduled: () => JSON.parse(localStorage.getItem("fm_reminders") || "[]"),
+  save: (r) => localStorage.setItem("fm_reminders", JSON.stringify(r)),
+  clear: () => localStorage.removeItem("fm_reminders"),
+};
+
+async function requestNotificationPermission() {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
+  const result = await Notification.requestPermission();
+  return result === "granted";
+}
+
+function sendNotification(title, body, icon = "✦") {
+  if (Notification.permission !== "granted") return;
+  const n = new Notification(`${icon} ${title}`, {
+    body,
+    icon: "/favicon.svg",
+    badge: "/favicon.svg",
+    tag: title, // prevent duplicates
+  });
+  n.onclick = () => { window.focus(); n.close(); };
+  setTimeout(() => n.close(), 8000);
+}
+
+async function generateSmartReminders(tasks) {
+  const active = tasks.filter(t => t.status === "active" && t.deadline);
+  if (!active.length) return [];
+
+  const now = new Date();
+  const today = now.toISOString().split("T")[0];
+
+  const system = `You are a smart reminder AI. Return ONLY valid JSON array, no markdown.`;
+  const prompt = `Analyze these tasks and suggest smart reminders.
+Today: ${today}, Current hour: ${now.getHours()}
+
+Tasks with deadlines:
+${active.map(t => `- "${t.title}" deadline: ${t.deadline}, priority: ${t.priority}, energy: ${t.energy}`).join("\n")}
+
+Return array of reminders (max 4, only the most important):
+[
+  {
+    "taskId": "...",
+    "taskTitle": "...",
+    "message": "short reminder message in Russian (max 12 words)",
+    "minutesFromNow": 5,
+    "urgency": "high or medium"
+  }
+]
+
+Rules:
+- Overdue tasks: remind in 2-5 min
+- Today deadline: remind in 10-15 min  
+- Tomorrow deadline: remind in 30-60 min
+- High priority: always include
+- Make messages warm and specific, not robotic`;
+
+  try {
+    const apiKey = import.meta.env.VITE_ANTHROPIC_KEY;
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 500,
+        system,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "[]";
+    const clean = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  } catch {
+    return [];
+  }
+}
+
+function useSmartReminders(tasks) {
+  const [permission, setPermission] = useState(Notification.permission || "default");
+  const [reminders, setReminders] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const timersRef = useRef([]);
+
+  async function requestPermission() {
+    const granted = await requestNotificationPermission();
+    setPermission(granted ? "granted" : "denied");
+    return granted;
+  }
+
+  async function scheduleReminders(taskList) {
+    // Clear existing timers
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+
+    setLoading(true);
+    const suggestions = await generateSmartReminders(taskList);
+    setLoading(false);
+
+    if (!suggestions.length) return;
+
+    const scheduled = suggestions.map(r => {
+      const fireAt = Date.now() + r.minutesFromNow * 60 * 1000;
+      const timerId = setTimeout(() => {
+        sendNotification(r.taskTitle, r.message, r.urgency === "high" ? "🔥" : "⏰");
+      }, r.minutesFromNow * 60 * 1000);
+      timersRef.current.push(timerId);
+      return { ...r, fireAt };
+    });
+
+    setReminders(scheduled);
+    reminderStorage.save(scheduled);
+    return scheduled;
+  }
+
+  function clearAll() {
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+    setReminders([]);
+    reminderStorage.clear();
+  }
+
+  return { permission, reminders, loading, requestPermission, scheduleReminders, clearAll };
+}
+
 // ─── Claude API ───────────────────────────────────────────────────────────────
 async function callClaude(prompt, systemPrompt) {
   const apiKey = import.meta.env.VITE_ANTHROPIC_KEY;
@@ -624,7 +758,9 @@ function TodayView({ tasks, onDone, onDelete, onEdit, onAdd, prioritizing, lastP
         </div>
       ) : (
         <>
-          <Section title="Сейчас" emoji="⚡" items={now} />
+          <RemindersPanel tasks={tasks} />
+
+      <Section title="Сейчас" emoji="⚡" items={now} />
       <Section title="На сегодня" emoji="○" items={today} />
           <Section title="Потом" emoji="◦" items={later} dim />
         </>
@@ -934,6 +1070,127 @@ Format: 3 bullet points starting with emoji, each max 20 words. Be specific abou
 
 
 
+
+// ─── Reminders Panel ─────────────────────────────────────────────────────────
+
+function RemindersPanel({ tasks }) {
+  const { permission, reminders, loading, requestPermission, scheduleReminders, clearAll } = useSmartReminders(tasks);
+  const [scheduled, setScheduled] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  async function handleEnable() {
+    const granted = await requestPermission();
+    if (granted) {
+      const result = await scheduleReminders(tasks);
+      if (result?.length) setScheduled(true);
+    }
+  }
+
+  async function handleRefresh() {
+    clearAll();
+    const result = await scheduleReminders(tasks);
+    if (result?.length) setScheduled(true);
+  }
+
+  function formatFireAt(ms) {
+    const diff = Math.round((ms - Date.now()) / 60000);
+    if (diff <= 0) return "сейчас";
+    if (diff < 60) return `через ${diff} мин`;
+    return `через ${Math.round(diff / 60)} ч`;
+  }
+
+  const urgencyColor = { high: "#f59e0b", medium: "#6366f1" };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div
+        className="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-50 transition-colors"
+        onClick={() => setExpanded(e => !e)}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base ${
+            permission === "granted" ? "bg-amber-50" : "bg-slate-100"
+          }`}>
+            {permission === "granted" ? "🔔" : "🔕"}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Умные напоминания</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {permission === "denied" ? "Доступ запрещён в браузере" :
+               permission !== "granted" ? "Нажми чтобы включить" :
+               scheduled ? `${reminders.length} активных напоминаний` : "Готово к настройке"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {loading && <span className="text-xs text-amber-500 font-mono animate-pulse">ИИ думает...</span>}
+          {permission === "granted" && scheduled && !loading && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleRefresh(); }}
+              className="text-xs text-slate-400 hover:text-amber-500 transition-colors px-2 py-1 rounded-lg hover:bg-amber-50"
+            >
+              ↺ обновить
+            </button>
+          )}
+          <span className="text-slate-300 text-sm">{expanded ? "▲" : "▼"}</span>
+        </div>
+      </div>
+
+      {/* Body */}
+      {expanded && (
+        <div className="px-5 pb-5 border-t border-slate-100 pt-4 space-y-4">
+          {permission !== "granted" ? (
+            <div className="text-center py-4 space-y-3">
+              <p className="text-sm text-slate-500">
+                ИИ проанализирует твои дедлайны и сам решит когда напомнить — за час, за день, или прямо сейчас если что-то горит.
+              </p>
+              <button
+                onClick={handleEnable}
+                disabled={permission === "denied"}
+                className="px-6 py-2.5 rounded-xl bg-amber-400 text-slate-900 text-sm font-semibold hover:bg-amber-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {permission === "denied" ? "Разреши в настройках браузера" : "Включить напоминания →"}
+              </button>
+            </div>
+          ) : !scheduled ? (
+            <div className="text-center py-4 space-y-3">
+              <p className="text-sm text-slate-500">ИИ проанализирует задачи и расставит напоминания умно</p>
+              <button
+                onClick={handleRefresh}
+                className="px-6 py-2.5 rounded-xl bg-amber-400 text-slate-900 text-sm font-semibold hover:bg-amber-300 transition-colors"
+              >
+                Запустить ИИ-анализ →
+              </button>
+            </div>
+          ) : reminders.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-3">Нет задач с дедлайнами для напоминаний</p>
+          ) : (
+            <div className="space-y-2.5">
+              {reminders.map((r, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: urgencyColor[r.urgency] || "#94a3b8" }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">{r.taskTitle}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">"{r.message}"</p>
+                  </div>
+                  <span className="text-xs font-mono text-amber-500 whitespace-nowrap">{formatFireAt(r.fireAt)}</span>
+                </div>
+              ))}
+              <button
+                onClick={clearAll}
+                className="text-xs text-slate-400 hover:text-red-400 transition-colors mt-1"
+              >
+                Отменить все напоминания
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Focus Mode ───────────────────────────────────────────────────────────────
 
 function useSound() {
@@ -1170,21 +1427,88 @@ function FocusView({ tasks, onDone, onSetFullscreen }) {
 // ─── Voice Assistant ──────────────────────────────────────────────────────────
 
 function useVoiceSynth() {
-  function speak(text) {
-    if (!window.speechSynthesis) return;
+  const audioRef = useRef(null);
+
+  async function speakElevenLabs(text) {
+    const apiKey = import.meta.env.VITE_ELEVEN_KEY;
+    if (!apiKey) return false;
+
+    try {
+      // Rachel — multilingual, warm natural voice, works well for Russian
+      const voiceId = "21m00Tcm4TlvDq8ikWAM";
+
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_multilingual_v2",
+          voice_settings: {
+            stability: 0.45,
+            similarity_boost: 0.82,
+            style: 0.3,
+            use_speaker_boost: true,
+          },
+        }),
+      });
+
+      if (!res.ok) return false;
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+        URL.revokeObjectURL(audioRef.current.src);
+      }
+
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.play();
+      return audio;
+    } catch {
+      return false;
+    }
+  }
+
+  function speakFallback(text) {
+    if (!window.speechSynthesis) return null;
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ru-RU";
-    utter.rate = 1.05;
-    utter.pitch = 1.0;
-    // Try to find a good Russian voice
+    utter.rate = 0.88;
+    utter.pitch = 1.05;
     const voices = window.speechSynthesis.getVoices();
-    const ruVoice = voices.find(v => v.lang.startsWith("ru")) || voices.find(v => v.lang.startsWith("en"));
+    const ruVoice = voices.find(v => v.lang.startsWith("ru") && !v.name.includes("Google"))
+      || voices.find(v => v.lang.startsWith("ru"));
     if (ruVoice) utter.voice = ruVoice;
     window.speechSynthesis.speak(utter);
     return utter;
   }
-  function stop() { window.speechSynthesis?.cancel(); }
+
+  async function speak(text, onEnd) {
+    const result = await speakElevenLabs(text);
+    if (result) {
+      result.onended = onEnd || null;
+      return result;
+    }
+    // fallback to browser TTS
+    const utter = speakFallback(text);
+    if (utter && onEnd) utter.onend = onEnd;
+    return utter;
+  }
+
+  function stop() {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    window.speechSynthesis?.cancel();
+  }
+
   return { speak, stop };
 }
 
@@ -1323,12 +1647,9 @@ function VoiceView({ tasks, onAddTask }) {
 
       setMessages((m) => [...m, { role: "assistant", text: reply }]);
       setOrbState("speaking");
-      const utter = speak(reply);
-      if (utter) {
-        utter.onend = () => setOrbState("idle");
-      } else {
-        setTimeout(() => setOrbState("idle"), 2000);
-      }
+      speak(reply, () => setOrbState("idle")).then(result => {
+        if (!result) setTimeout(() => setOrbState("idle"), 2000);
+      });
     } catch {
       setMessages((m) => [...m, { role: "assistant", text: "Произошла ошибка. Попробуй ещё раз." }]);
       setOrbState("idle");
